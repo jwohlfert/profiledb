@@ -72,7 +72,7 @@
             <input type="text" name="email" id="nam"><br/>
             <label for="id_1723">Password</label>
             <input type="text" name="pass" id="id_1723"><br/>
-            <input type="submit" value="Log In">
+            <input type="submit" onclick="return doValidate();" value="Log In">
             <input type="submit" name="Cancel" value="Cancel">
         </form>
 
@@ -86,3 +86,30 @@
 
     </div>
 </body>
+
+<script>
+    function doValidate() {
+        console.log('Validating...');
+        try {
+            pw = document.getElementById('id_1723').value;
+            em = document.getElementById('nam').value;
+            patt = new RegExp("@.+\.");
+            console.log("Validating pw="+pw);
+            if (pw == null || pw == "") {
+                alert("Both fields must be filled out");
+                return false;
+            }
+            if (em == null || em == ""){
+                alert("Both fields must be filled out");
+                return false;
+            }
+            if (!patt.test(em)){
+                alert("Invalid email address");
+                return false;
+            }
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+</script>

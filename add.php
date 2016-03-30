@@ -8,39 +8,18 @@
 session_start();
 
 if (!isset($_SESSION['name'])){
-    die("ACCESS DENIED");
+    die("Not logged in");
 }
+if (isset($_SESSION['name']) && isset($_SESSION['user_id'])){
+    $_SESSION['name'] = htmlentities($_SESSION['name']);
+    $_SESSION['user_id'] = htmlentities($_SESSION['user_id']);
 
-    if ( isset($_POST['Cancel'] ) ) {
+}
+if (!empty($_POST)){
+    if (isset($_POST['Cancel'] ) ) {
         // Redirect the browser to index.php
         header("Location: index.php");
         exit();
-    }
-
-    if(!empty($_POST) && empty($_POST['first_name']) ){
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
-    }
-    if(!empty($_POST) && empty($_POST['last_name']) ){
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
-    }
-    if(!empty($_POST) && empty($_POST['email']) ) {
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
-    }
-    if(!empty($_POST) && empty($_POST['headline']) ){
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
-    }
-    if(!empty($_POST) && empty($_POST['summary']) ){
-    	$_SESSION['error'] = "All values are required";
-    	header("Location: add.php");
-    	exit();
     }
 
     $_POST['first_name'] = htmlentities($_POST['first_name']);
@@ -49,23 +28,60 @@ if (!isset($_SESSION['name'])){
     $_POST['headline'] = htmlentities($_POST['headline']);
     $_POST['summary'] = htmlentities($_POST['summary']);
 
+    if(empty($_POST['first_name']) || $_POST['first_name'] == ""){
+        $_SESSION['error'] = "All values are required";
+        header("Location: add.php");
+        exit();
+    }
+    if(empty($_POST['last_name']) || $_POST['last_name'] == ""){
+        $_SESSION['error'] = "All values are required";
+        header("Location: add.php");
+        exit();
+    }
+    if(empty($_POST['email']) || $_POST['email'] == "") {
+        $_SESSION['error'] = "All values are required";
+        header("Location: add.php");
+        exit();
+    }
+    if(empty($_POST['headline']) || $_POST['headline'] == ""){
+        $_SESSION['error'] = "All values are required";
+        header("Location: add.php");
+        exit();
+    }
+    if(empty($_POST['summary']) || $_POST['summary'] == ""){
+        $_SESSION['error'] = "All values are required";
+        header("Location: add.php");
+        exit();
+    }
+    if(empty($_SESSION['user_id']) || $_SESSION['user_id'] == ""){
+        $_SESSION['error'] = "Must be logged in";
+        header("Location: add.php");
+        exit();
+    }
+    if( strpos($_POST['email'], '@') == false) {
+        $_SESSION['error'] = "Email address must contain @";
+        header("Location: add.php");
+        exit();
+    }
+
     if (!empty($_POST)){
         require_once "pdo.php";
 
         $stmt = $pdo->prepare('INSERT INTO profile (user_id, first_name, last_name, email, headline, summary) VALUES ( :ui, :fn, :ln, :em, :hl, :sum)');
         $stmt->execute(array(
-            ':ui' => $_Session['user_id'],
+            ':ui' => $_SESSION['user_id'],
             ':fn' => $_POST['first_name'],
             ':ln' => $_POST['last_name'],
             ':em' => $_POST['email'],
-        	':hl' => $_POST['headline'],
-        	':sum' => $_POST['summary']
+            ':hl' => $_POST['headline'],
+            ':sum' => $_POST['summary']
         ));
 
         $_SESSION['success'] = 'Record added';
         header("Location: index.php");
         exit();
     }
+}
 
 ?>
 

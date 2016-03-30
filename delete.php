@@ -8,12 +8,14 @@
 session_start();
 
 if (!isset($_SESSION['name'])){
-    die("ACCESS DENIED");
+    die("Not logged in");
 }
+$_SESSION['name'] = htmlentities($_SESSION['name']);
+$_SESSION['user_id'] = htmlentities($_SESSION['user_id']);
 
 if(!empty($_POST)){
-    $id = htmlentities($_SESSION['autos_id']);
-    unset($_SESSION['autos_id']);
+    $id = htmlentities($_SESSION['profile_id']);
+    unset($_SESSION['profile_id']);
 
     if ( isset($_POST['cancel'] ) ) {
         // Redirect the browser to index.php
@@ -22,10 +24,10 @@ if(!empty($_POST)){
         return;
     }
 
-    if( htmlentities($_POST['delete'])=="delete" ){
+    if( htmlentities($_POST['delete'])=="Delete" ){
         require_once "pdo.php";
 
-        $stmt = $pdo->prepare('DELETE FROM autos WHERE autos_id = :id');
+        $stmt = $pdo->prepare('DELETE FROM profile WHERE profile_id = :id');
         $stmt->execute(array(
             ':id' => $id));
 
@@ -45,27 +47,33 @@ if(!empty($_POST)){
 
 <body>
 <?php
-    echo ('<h1>Tracking Autos for '.$_SESSION['name'].'</h1>');
+require_once "pdo.php";
+$_SESSION['profile_id'] =  htmlentities($_GET['profile_id']);
 
-    if ( isset($_SESSION['error']) ) {
-        echo('<p style="color: red;">'.htmlentities($_SESSION['error'])."</p>\n");
-        unset($_SESSION['error']);
-    }
-
-    $_SESSION['autos_id'] =  htmlentities($_GET['autos_id']);
-
-    $stmt = $pdo->prepare("SELECT * FROM autos WHERE autos_id = :id");
-    $stmt->execute(array(
-        ':id' => htmlentities($_GET['autos_id'])
+    $count = $pdo->prepare("SELECT COUNT(*) FROM profile WHERE profile_id = :id and user_id=:ui");
+    $count->execute(array(
+        ':id' => htmlentities($_GET['profile_id']),
+        ':ui' => $_SESSION['user_id']
     ));
+    if ($count->fetchColumn() > 0) {
+        $stmt = $pdo->prepare("SELECT * FROM profile WHERE profile_id = :id");
+        $stmt->execute(array(
+            ':id' => htmlentities($_GET['profile_id'])
+        ));
 
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        echo ('<p>Confirm: Deleting '.$row['make'].' '.$row['model'].'</p>');
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            echo('<p>Confirm: Deleting ' . $row['first_name'] . ' ' . $row['last_name'] . '\'s Profile?</p>');
+        }
     }
+    else{
+    echo ('<p> You do not have permission to delete this </p><br/>');
+    }
+
 ?>
 
 <form method="POST">
-    <input type="submit" name="delete" value="delete">
+
+    <input type="submit" name="delete" value="Delete">
     <input type="submit" name="cancel" value="cancel">
 </form>
 </body>
