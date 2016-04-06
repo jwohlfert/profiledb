@@ -40,38 +40,66 @@
     ));
 
     if ($count->fetchColumn() > 0) {
-        echo('<table border="1">');
-        echo('<thead>');
-        echo('<tr>');
-        echo('<th>First Name</th>');
-        echo('<th>Last Name</th>');
-        echo('<th>Email</th>');
-        echo('<th>Headline</th>');
-        echo('<th>Summary</th>');
-        echo('<th>Actions</th>');
-        echo('</tr>');
-        echo('</thead>');
-
-        echo('<tbody>');
 
         $stmt = $pdo->prepare("SELECT * FROM profile WHERE profile_id= :pid");
-        $count->execute(array(
+        $stmt->execute(array(
             ':pid' => $_GET['profile_id']
         ));
 
+        echo('<ul style="list-style-type:none">');
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            echo('<tr>');
-            echo('<td>' . $row['first_name'] . '</td>');
-            echo('<td>' . $row['last_name'] . '</td>');
-            echo('<td>' . $row['email'] . '</td>');
-            echo('<td>' . $row['headline'] . '</td>');
-            echo('<td>' . $row['summary'] . '</td>');
-            if ($row['user_id'] == $_SESSION['user_id']) {
-                echo('<td><a href="edit.php?profile_id=' . $row['profile_id'] . '">Edit</a> / <a href = "delete.php?profile_id='.$row['profile_id'].'">Delete</a></td>');
-            }
-            echo('</tr>');
+            echo ('<li>First Name
+                       <ul>
+                       <li>' . $row['first_name'] . '</li>
+                       </ul>
+                    </li>');
+
+            echo ('<li>Last Name
+                       <ul>
+                       <li>' . $row['last_name'] . '</li>
+                       </ul>
+                   </li>');
+
+            echo ('<li>Email
+                       <ul>
+                       <li>' . $row['email'] . '</li>
+                       </ul>
+                   </li>');
+
+            echo ('<li>Headline
+                       <ul>
+                       <li>' . $row['headline'] . '</li>
+                       </ul>
+                   </li>');
+
+            echo ('<li>Summary
+                       <ul>
+                       <li>' . $row['summary'] . '</li>
+                       </ul>
+                   </li>');
+
         }
-        echo('</tbody>');
+
+        $count = $pdo->prepare("SELECT COUNT(*) FROM position WHERE profile_id = :id");
+        $count->execute(array(
+            ':id' => htmlentities($_GET['profile_id'])
+        ));
+
+        if ($count->fetchColumn() > 0) {
+             $stmt = $pdo->prepare('SELECT * FROM position WHERE profile_id = :id');
+            $stmt->execute(array(
+                ':id' => htmlentities($_GET['profile_id'])
+            ));
+            echo('<li>Positions');
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                echo('<ul>');
+                echo('<li> Year: '.htmlentities($row['year']).'</li>');
+                echo('<li> Description: '.htmlentities($row['description']).'</li>');
+                echo('</ul>');
+            }
+            echo('</li>');
+        }
+        echo('</ul>');
     }
     else {
         echo ('<p> No rows found</p><br/>');

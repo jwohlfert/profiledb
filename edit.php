@@ -50,6 +50,28 @@ if(!empty($_POST)){
         header("Location: edit.php?profile_id=".$id);
         return;
     }
+    for($i=1; $i<=9; $i++) {
+        if ( ! isset($_POST['year'.$i]) ) continue;
+        if ( ! isset($_POST['desc'.$i]) ) continue;
+        if ($_POST['year'.$i]==""){
+            $_SESSION['error'] = "All values are required";
+            header("Location: edit.php?profile_id=".$id);
+            exit();
+        }
+        if ($_POST['desc'.$i]==""){
+            $_SESSION['error'] = "All values are required";
+            header("Location: edit.php?profile_id=".$id);
+            exit();
+        }
+        if (!is_numeric($_POST['year'.$i])){
+            $_SESSION['error'] = "Years must be numeric";
+            header("Location: edit.php?profile_id=".$id);
+            exit();
+        }
+        $_POST['year'.$i] = htmlentities($_POST['year'.$i]);
+        $_POST['desc'.$i] = htmlentities($_POST['desc'.$i]);
+        $_POST['position_id'.$i] = htmlentities($_POST['position_id'.$i]);
+    }
     if( strpos($_POST['email'], '@') == false){
         $_SESSION['error'] = "Email address must contain @";
         header("Location: edit.php?profile_id=".$id);
@@ -58,25 +80,60 @@ if(!empty($_POST)){
     else{
         require_once "pdo.php";
 
-        $_POST['first_name'] = htmlentities($_POST['first_name']);
-        $_POST['last_name'] = htmlentities($_POST['last_name']);
-        $_POST['email'] = htmlentities($_POST['email']);
-        $_POST['headline'] = htmlentities($_POST['headline']);
-        $_POST['summary'] = htmlentities($_POST['summary']);
-
-
-        $stmt = $pdo->prepare('INSERT INTO profile(user_id,first_name, last_name, email, headline, summary) VALUES ( :ui, :fn, :ln, :em, :hl, :sum)');
+        $stmt = $pdo->prepare('UPDATE profile SET first_name = :fn, last_name = :ln, email = :em, headline = :hl, summary = :sum WHERE profile_id = :pid ');
         $stmt->execute(array(
-            ':ui' => $_SESSION['user_id'],
             ':fn' => $_POST['first_name'],
             ':ln' => $_POST['last_name'],
             ':em' => $_POST['email'],
             ':hl' => $_POST['headline'],
-            ':sum' => $_POST['summary']));
+            ':sum' => $_POST['summary'],
+            ':pid' => $id
+        ));
+        $stmt = $pdo->prepare('SELECT profile_id FROM profile WHERE user_id = :ui AND first_name = :fn AND last_name = :ln');
+        $stmt->execute(array(
+            ':ui' => $_SESSION['user_id'],
+            ':fn' => $_POST['first_name'],
+            ':ln' => $_POST['last_name']
+        ));
 
-        $_SESSION['success'] = "Record edited";
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $profile_id = $row['profile_id'];
+        }
+
+        for($i=1; $i<=9; $i++) {
+            if ( ! isset($_POST['year'.$i]) ) continue;
+            if ( ! isset($_POST['desc'.$i]) ) continue;
+            if (isset($_POST['position_id'.$i]) ){
+                $position = htmlentities($_POST['position_id'.$i]);
+                $year = $_POST['year'.$i];
+                $desc = $_POST['desc'.$i];
+                $rank = $i;
+                $stmt = $pdo->prepare('UPDATE position SET profile_id = :pid, rank = :rank, year = :year, description = :desc WHERE position_id=:posid');
+                $stmt->execute(array(
+                    ':pid' => $profile_id,
+                    ':rank' => $rank,
+                    ':year' => $year,
+                    ':desc' => $desc,
+                    ':posid' => $position
+                ));
+            }
+            else{
+                $year = $_POST['year'.$i];
+                $desc = $_POST['desc'.$i];
+                $rank = $i;
+                $stmt = $pdo->prepare('INSERT INTO position (profile_id, rank, year, description) VALUES(:pid, :rank, :year, :desc)');
+                $stmt->execute(array(
+                    ':pid' => $profile_id,
+                    ':rank' => $rank,
+                    ':year' => $year,
+                    ':desc' => $desc
+                ));
+            }
+        }
+
+        $_SESSION['success'] = 'Records added';
         header("Location: index.php");
-        return;
+        exit();
     }
 }
 ?>
@@ -115,16 +172,46 @@ if ( isset($_SESSION['error']) ) {
         ));
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             echo('<label for="mk">First Name</label>
-            <input type="text" name="first_name" id="mk" value="' . $row['first_name'] . '"><br/>
-            <label for="ml">Last Name</label>
-            <input type="text" name="last_name" id="ml" value="' . $row['last_name'] . '"><br/>
-            <label for="yr">Email</label>
-            <input type="text" name="email" id="yr" value="' . $row['email'] . '"><br/>
-            <label for="miles">Headline</label>
-            <input type="text" name="headline" id="miles" value="' . $row['headline'] . '"><br/>
-            <label for="miles">Summary</label>
+            <input type="text" name="first_name" id="mk" value="' . $row['first_name'] . '"><br/>');
+            echo('<label for="ml">Last Name</label>
+            <input type="text" name="last_name" id="ml" value="' . $row['last_name'] . '"><br/>');
+            echo('<label for="yr">Email</label>
+            <input type="text" name="email" id="yr" value="' . $row['email'] . '"><br/>');
+            echo('<label for="miles">Headline</label>
+            <input type="text" name="headline" id="miles" value="' . $row['headline'] . '"><br/>');
+            echo('<label for="miles">Summary</label>
             <input type="text" name="summary" id="miles" value="' . $row['summary'] . '"><br/>');
         }
+
+        $count = $pdo->prepare("SELECT COUNT(*) FROM position WHERE profile_id = :id");
+        $count->execute(array(
+            ':id' => htmlentities($_GET['profile_id'])
+        ));
+        if ($count->fetchColumn() > 0) {
+            $ct = 0;
+            $stmt = $pdo->prepare('SELECT * FROM position WHERE profile_id = :id');
+            $stmt->execute(array(
+                ':id' => htmlentities($_GET['profile_id'])
+            ));
+            echo('<p>Position: <input type="submit" id="addPos" value="+">');
+            echo('<div id="position_fields">');
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $ct++;
+                echo('<div id="position'. $ct .'">'."\n");
+                echo('<input type="hidden" name="position_id'.$ct.'" value="'.$row['position_id'].'">');
+                echo('<p>Year: <input type="text" name="year' . $ct . '"');
+                echo(' value="' . htmlentities($row['year']) . '" />' . "\n");
+                echo('<input type="button" value="-" ');
+                echo('onclick="$(\'#position' . $ct . '\').remove();return false;">' . "\n");
+                echo("</p>\n");
+                echo('<textarea name="desc' . $ct . '" rows="8" cols="80">' . "\n");
+                echo(htmlentities($row['description']) . "\n");
+                echo("\n</textarea>\n</div>\n");
+            }
+            echo('</div>');
+            echo('</p>');
+        }
+
     }
     else{
         echo ('<p> You do not have permission to edit this profile</p><br/>');
@@ -135,6 +222,33 @@ if ( isset($_SESSION['error']) ) {
     <input type="submit" value="Save">
     <input type="submit" name="cancel" value="cancel">
 </form>
+<script src="jquery-1.10.2.js"></script>
+<script src="jquery-ui-1.11.4.js"></script>
+<script>
+    countPos = <?=$ct?>;
 
+    // http://stackoverflow.com/questions/17650776/add-remove-html-inside-div-using-javascript
+    $(document).ready(function(){
+        window.console && console.log('Document ready called');
+        $("#addPos").click(function(event){
+            // http://api.jquery.com/event.preventdefault/
+            event.preventDefault();
+            if ( countPos >= 9 ) {
+                alert("Maximum of nine position entries exceeded");
+                return;
+            }
+            countPos++;
+            window.console && console.log("Adding position "+countPos);
+            $('#position_fields').append(
+                '<div id="position'+countPos+'"> \
+                    <p>Year: <input type="text" name="year'+countPos+'" value="" /> \
+                    <input type="button" value="-" \
+                    onclick="$(\'#position'+countPos+'\').remove();countPos--;return false;"></p> \
+                    <textarea name="desc'+countPos+'" rows="8" cols="80"></textarea>\
+                    </div>'
+            );
+        });
+    });
+</script>
 </body>
 </html>

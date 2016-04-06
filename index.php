@@ -24,7 +24,7 @@
         require_once "pdo.php";
 
         if ( isset($_SESSION['success']) ) {
-            echo('<p style="color: green;">'.htmlentities($_SESSION['success']).'</p>\n');
+            echo('<p style="color: green;">'.htmlentities($_SESSION['success']).'</p>'."\n");
             unset($_SESSION['success']);
         }
 
@@ -46,7 +46,7 @@
                                 echo ('<td>'.$row['first_name'].'</td>');
                                 echo ('<td>'.$row['last_name'].'</td>');
                                 echo ('<td>'.$row['headline'].'</td>');
-                                if ($row['user_id'] == $_SESSION['user_id']){
+                                if (isset($_SESSION['user_id']) && $row['user_id'] == $_SESSION['user_id']){
                                     echo ('<td><a href="view.php?profile_id='.$row['profile_id'].'">View</a> / <a href="edit.php?profile_id='.$row['profile_id'].'">Edit</a> / <a href = "delete.php?profile_id='.$row['profile_id'].'">Delete</a></td>');
                                 }else{
                                     echo('<td><a href="view.php?profile_id='.$row['profile_id'].'">View</a></td>');
