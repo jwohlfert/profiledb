@@ -25,35 +25,17 @@ if(!empty($_POST)){
         return;
     }
 
-    if( !isset($_POST['first_name']) || (strlen($_POST['first_name'])<1) ){
-        $_SESSION['error'] = "All fields are required";
-        header("Location: edit.php?profile_id=".$id);
-        return;
-    }
-    if( !isset($_POST['last_name']) || strlen($_POST['last_name'])<1 ){
-        $_SESSION['error'] = "All fields are required";
-        header("Location: edit.php?profile_id=".$id);
-        return;
-    }
-    if( !isset($_POST['email']) || strlen($_POST['email'])<1 ){
-        $_SESSION['error'] = "All fields are required";
-        header("Location: edit.php?profile_id=".$id);
-        return;
-    }
-    if( !isset($_POST['headline']) || strlen($_POST['headline'])<1 ){
-        $_SESSION['error'] = "All fields are required";
-        header("Location: edit.php?profile_id=".$id);
-        return;
-    }
-    if( !isset($_POST['summary']) || strlen($_POST['summary'])<1 ){
+    if( !isset($_POST['first_name']) || (strlen($_POST['first_name'])<1 || !isset($_POST['last_name']) || strlen($_POST['last_name'])<1 || !isset($_POST['email']) || strlen($_POST['email'])<1 || !isset($_POST['headline']) || strlen($_POST['headline'])<1 || !isset($_POST['summary']) || strlen($_POST['summary'])<1 ) ){
         $_SESSION['error'] = "All fields are required";
         header("Location: edit.php?profile_id=".$id);
         return;
     }
     for($i=1; $i<=9; $i++) {
-        if ( ! isset($_POST['year'.$i]) ) continue;
+        if ( ! isset($_POST['posyear'.$i]) ) continue;
         if ( ! isset($_POST['desc'.$i]) ) continue;
-        if ($_POST['year'.$i]==""){
+        if ( ! isset($_POST['eduyear'.$i]) ) continue;
+        if ( ! isset($_POST['desc'.$i]) ) continue;
+        if ($_POST['posyear'.$i]==""){
             $_SESSION['error'] = "All values are required";
             header("Location: edit.php?profile_id=".$id);
             exit();
@@ -63,12 +45,12 @@ if(!empty($_POST)){
             header("Location: edit.php?profile_id=".$id);
             exit();
         }
-        if (!is_numeric($_POST['year'.$i])){
+        if (!is_numeric($_POST['posyear'.$i])){
             $_SESSION['error'] = "Years must be numeric";
             header("Location: edit.php?profile_id=".$id);
             exit();
         }
-        $_POST['year'.$i] = htmlentities($_POST['year'.$i]);
+        $_POST['posyear'.$i] = htmlentities($_POST['posyear'.$i]);
         $_POST['desc'.$i] = htmlentities($_POST['desc'.$i]);
         $_POST['position_id'.$i] = htmlentities($_POST['position_id'.$i]);
     }
@@ -101,31 +83,31 @@ if(!empty($_POST)){
         }
 
         for($i=1; $i<=9; $i++) {
-            if ( ! isset($_POST['year'.$i]) ) continue;
+            if ( ! isset($_POST['posyear'.$i]) ) continue;
             if ( ! isset($_POST['desc'.$i]) ) continue;
             if (isset($_POST['position_id'.$i]) ){
                 $position = htmlentities($_POST['position_id'.$i]);
-                $year = $_POST['year'.$i];
+                $posyear = $_POST['posyear'.$i];
                 $desc = $_POST['desc'.$i];
                 $rank = $i;
                 $stmt = $pdo->prepare('UPDATE position SET profile_id = :pid, rank = :rank, year = :year, description = :desc WHERE position_id=:posid');
                 $stmt->execute(array(
                     ':pid' => $profile_id,
                     ':rank' => $rank,
-                    ':year' => $year,
+                    ':year' => $posyear,
                     ':desc' => $desc,
                     ':posid' => $position
                 ));
             }
             else{
-                $year = $_POST['year'.$i];
+                $posyear = $_POST['posyear'.$i];
                 $desc = $_POST['desc'.$i];
                 $rank = $i;
                 $stmt = $pdo->prepare('INSERT INTO position (profile_id, rank, year, description) VALUES(:pid, :rank, :year, :desc)');
                 $stmt->execute(array(
                     ':pid' => $profile_id,
                     ':rank' => $rank,
-                    ':year' => $year,
+                    ':year' => $posyear,
                     ':desc' => $desc
                 ));
             }
@@ -188,7 +170,7 @@ if ( isset($_SESSION['error']) ) {
             ':id' => htmlentities($_GET['profile_id'])
         ));
         if ($count->fetchColumn() > 0) {
-            $ct = 0;
+            $posct = 0;
             $stmt = $pdo->prepare('SELECT * FROM position WHERE profile_id = :id');
             $stmt->execute(array(
                 ':id' => htmlentities($_GET['profile_id'])
@@ -199,7 +181,7 @@ if ( isset($_SESSION['error']) ) {
                 $ct++;
                 echo('<div id="position'. $ct .'">'."\n");
                 echo('<input type="hidden" name="position_id'.$ct.'" value="'.$row['position_id'].'">');
-                echo('<p>Year: <input type="text" name="year' . $ct . '"');
+                echo('<p>Year: <input type="text" name="posyear' . $ct . '"');
                 echo(' value="' . htmlentities($row['year']) . '" />' . "\n");
                 echo('<input type="button" value="-" ');
                 echo('onclick="$(\'#position' . $ct . '\').remove();return false;">' . "\n");
@@ -225,7 +207,8 @@ if ( isset($_SESSION['error']) ) {
 <script src="jquery-1.10.2.js"></script>
 <script src="jquery-ui-1.11.4.js"></script>
 <script>
-    countPos = <?=$ct?>;
+    countPos = <?=$posct?>;
+    countEdu = <?=$educt?>;
 
     // http://stackoverflow.com/questions/17650776/add-remove-html-inside-div-using-javascript
     $(document).ready(function(){
@@ -241,12 +224,38 @@ if ( isset($_SESSION['error']) ) {
             window.console && console.log("Adding position "+countPos);
             $('#position_fields').append(
                 '<div id="position'+countPos+'"> \
-                    <p>Year: <input type="text" name="year'+countPos+'" value="" /> \
+                    <p>Year: <input type="text" name="posyear'+countPos+'" value="" /> \
                     <input type="button" value="-" \
                     onclick="$(\'#position'+countPos+'\').remove();countPos--;return false;"></p> \
                     <textarea name="desc'+countPos+'" rows="8" cols="80"></textarea>\
                     </div>'
             );
+        });
+    });
+
+
+    $(document).ready(function(){
+        window.console && console.log('Document ready called');
+        $("#addEdu").click(function(event){
+            // http://api.jquery.com/event.preventdefault/
+            event.preventDefault();
+            if ( countEdu >= 9 ) {
+                alert("Maximum of nine position entries exceeded");
+                return;
+            }
+            countPos++;
+            window.console && console.log("Adding position "+countEdu);
+            $('#position_fields').append(
+                '<div id="school'+countEdu+'"> \
+                    <p>Year: <input type="text" name="eduyear'+countEdu+'" value="" /> \
+                    <input type="button" value="-" \
+                    onclick="$(\'#school'+countEdu+'\').remove();countEdu--;return false;"></p> \
+                    <label>School:</label><input type="text" size="80" name="edu_school'+countEdu+'1" class="school" value="" />\
+                    </div>'
+            );
+        });
+        $('.school').autocomplete({
+            source: "school.php"
         });
     });
 </script>

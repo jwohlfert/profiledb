@@ -28,35 +28,10 @@ if (!empty($_POST)){
     $_POST['headline'] = htmlentities($_POST['headline']);
     $_POST['summary'] = htmlentities($_POST['summary']);
 
-    if(empty($_SESSION['user_id']) || $_SESSION['user_id'] == ""){
-        $_SESSION['error'] = "Must be logged in";
-        header("Location: add.php");
-        exit();
-    }
-    if(empty($_POST['first_name']) || $_POST['first_name'] == ""){
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
-    }
-    if(empty($_POST['last_name']) || $_POST['last_name'] == ""){
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
-    }
-    if(empty($_POST['email']) || $_POST['email'] == "") {
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
-    }
-    if(empty($_POST['headline']) || $_POST['headline'] == ""){
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
-    }
-    if(empty($_POST['summary']) || $_POST['summary'] == ""){
-        $_SESSION['error'] = "All values are required";
-        header("Location: add.php");
-        exit();
+    if( !isset($_POST['first_name']) || (strlen($_POST['first_name'])<1 || !isset($_POST['last_name']) || strlen($_POST['last_name'])<1 || !isset($_POST['email']) || strlen($_POST['email'])<1 || !isset($_POST['headline']) || strlen($_POST['headline'])<1 || !isset($_POST['summary']) || strlen($_POST['summary'])<1 ) ){
+        $_SESSION['error'] = "All fields are required";
+        header("Location: edit.php?profile_id=".$id);
+        return;
     }
 
     for($i=1; $i<=9; $i++) {
@@ -171,11 +146,12 @@ if (!empty($_POST)){
     <script src="jquery-ui-1.11.4.js"></script>
     <script>
         countPos = 0;
+        countEdu = 0;
 
         // http://stackoverflow.com/questions/17650776/add-remove-html-inside-div-using-javascript
         $(document).ready(function(){
             window.console && console.log('Document ready called');
-            $('#addPos').click(function(event){
+            $("#addPos").click(function(event){
                 // http://api.jquery.com/event.preventdefault/
                 event.preventDefault();
                 if ( countPos >= 9 ) {
@@ -188,10 +164,36 @@ if (!empty($_POST)){
                     '<div id="position'+countPos+'"> \
                     <p>Year: <input type="text" name="year'+countPos+'" value="" /> \
                     <input type="button" value="-" \
-                    onclick="$(\'#position'+countPos+'\').remove();return false;"></p> \
+                    onclick="$(\'#position'+countPos+'\').remove();countPos--;return false;"></p> \
                     <textarea name="desc'+countPos+'" rows="8" cols="80"></textarea>\
                     </div>'
                 );
+            });
+        });
+
+
+        $(document).ready(function(){
+            window.console && console.log('Document ready called');
+            $("#addEdu").click(function(event){
+                // http://api.jquery.com/event.preventdefault/
+                event.preventDefault();
+                if ( countEdu >= 9 ) {
+                    alert("Maximum of nine position entries exceeded");
+                    return;
+                }
+                countEdu++;
+                window.console && console.log("Adding position "+countEdu);
+                $('#position_fields').append(
+                    '<div id="school'+countEdu+'"> \
+                    <p>Year: <input type="text" name="year'+countEdu+'" value="" /> \
+                    <input type="button" value="-" \
+                    onclick="$(\'#school'+countEdu+'\').remove();countEdu--;return false;"></p> \
+                    <label>School:</label><input type="text" size="80" name="edu_school'+countEdu+'1" class="school" value="" />\
+                    </div>'
+                );
+            });
+            $('.school').autocomplete({
+                source: "school.php"
             });
         });
     </script>

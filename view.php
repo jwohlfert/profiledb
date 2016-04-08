@@ -99,6 +99,26 @@
             }
             echo('</li>');
         }
+
+        $count = $pdo->prepare("SELECT COUNT(*) FROM education a LEFT JOIN institution b ON a.institution_id = b.institution_id WHERE profile_id = :id");
+        $count->execute(array(
+            ':id' => htmlentities($_GET['profile_id'])
+        ));
+
+        if ($count->fetchColumn() > 0) {
+            $stmt = $pdo->prepare("SELECT * FROM education a LEFT JOIN institution b ON a.institution_id = b.institution_id WHERE profile_id = :id");
+            $stmt->execute(array(
+                ':id' => htmlentities($_GET['profile_id'])
+            ));
+            echo('<li>Positions');
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                echo('<ul>');
+                echo('<li> Year: '.htmlentities($row['year']).'</li>');
+                echo('<li> Institution: '.htmlentities($row['institution']).'</li>');
+                echo('</ul>');
+            }
+            echo('</li>');
+        }
         echo('</ul>');
     }
     else {
